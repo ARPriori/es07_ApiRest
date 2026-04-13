@@ -2,13 +2,20 @@
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
-class AlunniController
+class CertNestedController
 {
   // INDEX
   public function index(Request $request, Response $response, $args){
     $mysqli_connection = new MySQLi('my_mariadb', 'root', 'ciccio', 'scuola');
-    $result = $mysqli_connection->query("SELECT * FROM alunni");
-    $results = $result->fetch_all(MYSQLI_ASSOC);
+    $alunno_id = $args['id'];
+
+    $stmt = $mysqli->prepare("SELECT * FROM certificazioni WHERE alunno_id = ?");
+    $stmt->bind_param("i", $alunno_id);
+    $stmt->execute();
+
+    $res = $stmt->get_result();
+    $results = $res->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
 
     $response->getBody()->write(json_encode($results));
     return $response->withHeader("Content-type", "application/json")->withStatus(200);
@@ -19,7 +26,7 @@ class AlunniController
     $mysqli_connection = new MySQLi('my_mariadb', 'root', 'ciccio', 'scuola');
 
     $id = $args['id'];
-    $result = $mysqli_connection->query("SELECT * FROM alunni WHERE id = $id");
+    $result = $mysqli_connection->query("SELECT * FROM certificazioni WHERE id = $id");
     $results = $result->fetch_all(MYSQLI_ASSOC);
 
     $response->getBody()->write(json_encode($results));
@@ -31,18 +38,20 @@ class AlunniController
     $mysqli_connection = new MySQLi('my_mariadb', 'root', 'ciccio', 'scuola');
     
     $data = json_decode($request->getBody(), true);
-    $nome = $data['nome'] ?? null; 
-    $cognome = $data['cognome'] ?? null;
+    $alunno_id = $data['alunno_id'] ?? null; 
+    $titolo = $data['titolo'] ?? null;
+    $votazione = $data['votazione'] ?? null;
+    $ente = $data['ente'] ?? null;
 
     // This is NOT vulnerable to SQL injection!
-    if ($nome && $cognome) {
-      $stmt = $mysqli_connection->prepare("INSERT INTO alunni (nome, cognome) VALUES (?, ?)");
-      $stmt->bind_param("ss", $nome, $cognome);
+    if ($alunno_id && $titolo && $votazione && $ente) {
+      $stmt = $mysqli_connection->prepare("INSERT INTO certificazioni (alunno_id, titolo, votazione, ente) VALUES (?, ?, ?, ?)");
+      $stmt->bind_param("isis", $alunno_id, $titolo, $votazione, $ente);
       $stmt->execute();
       $stmt->close();
     }
 
-    $result = $mysqli_connection->query("SELECT * FROM alunni");
+    $result = $mysqli_connection->query("SELECT * FROM certificazioni");
     $results = $result->fetch_all(MYSQLI_ASSOC);
 
     $response->getBody()->write(json_encode($results));
@@ -53,30 +62,33 @@ class AlunniController
   public function update(Request $request, Response $response, $args) {
     $mysqli_connection = new MySQLi('my_mariadb', 'root', 'ciccio', 'scuola');
 
-    $data = json_decode($request->getBody(), true);
-    $nome = $data['nome'] ?? null;
-    $cognome = $data['cognome'] ?? null;
+    $data = json_decode($request->getBody(), true); 
+    $titolo = $data['titolo'] ?? null;
+    $votazione = $data['votazione'] ?? null;
+    $ente = $data['ente'] ?? null;
 
-    $id = $args['id']; 
-
-    $out = ["message" => null, "data" => []];
+    $id = $args['id'];
     
-    if ($nome && $cognome && $id) {
-      $stmt = $mysqli_connection->prepare("UPDATE alunni SET nome = ?, cognome = ? WHERE id = ?");
-      $stmt->bind_param("ssi", $nome, $cognome, $id);
+    if ($titolo && $votazione && $ente) {
+      $stmt = $mysqli_connection->prepare("UPDATE certificazioni SET titolo = ?, votazione = ?, ente = ? WHERE id = ?");
+      $stmt->bind_param("sisi", $titolo, $votazione, $ente, $id);
       $stmt->execute();
-      
-      $out["message"] = ($stmt->affected_rows > 0) ? "Record updated successfully" : "No records were updated.";
+
+      if ($stmt->affected_rows > 0) {
+          $response->getBody()->write(json_encode(["message" => "Record updated successfully"]));
+      } else {
+          $response->getBody()->write(json_encode(["message" => "No records were updated."]));
+      }
       
       $stmt->close();
     } else {
-      $out["message"] = "Missing required fields";
+      $response->getBody()->write(json_encode(["message" => "Missing required fields"]));
     }
 
-    $result = $mysqli_connection->query("SELECT * FROM alunni");
-    $out["data"] = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
-    
-    $response->getBody()->write(json_encode($out));
+    $result = $mysqli_connection->query("SELECT * FROM certificazioni");
+    $results = $result->fetch_all(MYSQLI_ASSOC);
+
+    $response->getBody()->write(json_encode($results));
     return $response->withHeader("Content-type", "application/json")->withStatus(200);
   }
 
@@ -85,9 +97,9 @@ class AlunniController
     $mysqli_connection = new MySQLi('my_mariadb', 'root', 'ciccio', 'scuola');
 
     $id = $args['id'];
-    $result = $mysqli_connection->query("DELETE FROM alunni WHERE id = $id");
+    $result = $mysqli_connection->query("DELETE FROM certificazioni WHERE id = $id");
 
-    $result = $mysqli_connection->query("SELECT * FROM alunni");
+    $result = $mysqli_connection->query("SELECT * FROM certificazioni");
     $results = $result->fetch_all(MYSQLI_ASSOC);
 
     $response->getBody()->write(json_encode($results));
