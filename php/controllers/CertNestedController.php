@@ -9,7 +9,7 @@ class CertNestedController
     $mysqli_connection = new MySQLi('my_mariadb', 'root', 'ciccio', 'scuola');
     $alunno_id = $args['id'];
 
-    $stmt = $mysqli->prepare("SELECT * FROM certificazioni WHERE alunno_id = ?");
+    $stmt = $mysqli_connection->prepare("SELECT * FROM certificazioni WHERE alunno_id = ?");
     $stmt->bind_param("i", $alunno_id);
     $stmt->execute();
 

@@ -3,6 +3,8 @@ use Slim\Factory\AppFactory;
 
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/controllers/AlunniController.php';
+require __DIR__ . '/controllers/CertificazioniController.php';
+require __DIR__ . '/controllers/CertNestedController.php';
 
 $app = AppFactory::create();
 
